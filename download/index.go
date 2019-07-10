@@ -78,8 +78,16 @@ func DownloadAndSave(url, dir, fileName string) (error) {
 	if err != nil {
 		return err
 	}
-
-	f, err := os.OpenFile(path.Join(dir, fileName), os.O_CREATE|os.O_RDWR, 0777)
+	imgPath := path.Join(dir, fileName)
+	fileInfo, err := os.Stat(imgPath)
+	if err != nil || fileInfo.Size() == 0 {
+		// 不存在 或者大小为0
+		// 需要下载
+	} else {
+		// 如果存在且大小不为0， 不下载
+		return nil
+	}
+	f, err := os.OpenFile(imgPath, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
 		return err
 	}

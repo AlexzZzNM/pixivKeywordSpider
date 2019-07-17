@@ -17,7 +17,7 @@
 git clone git@github.com:yangfanjie97/pixivKwywordSpider.git
 
 # 进入项目目录
-cd pixivKwywordSpider
+cd pixivKeywordSpider
 
 #在config目录配置您的账号和密码 以及代理
 

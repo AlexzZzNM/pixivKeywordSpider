@@ -68,6 +68,7 @@ func main() {
 		"post_key":  postKeyData.PostKey,
 		"source":    "accounts",
 		"return_to": "https://www.pixiv.net/",
+		"recaptcha_v3_token": config.RecaptchaToken,
 	}
 	err = loginC.Post("https://accounts.pixiv.net/api/login?lang=zh", logonMap)
 	if err != nil {
@@ -139,8 +140,8 @@ func main() {
 			}
 			// 遍历 判断
 			for _, item := range baseDataList {
-				// 如果收藏数大于 最小收藏， 请求详情页
-				if item.BookmarkCount >= config.MinCollection {
+				// 如果收藏数大于 最小收藏， 请求详情页 并且不等于空
+				if item.BookmarkCount >= config.MinCollection && item.IllustId != "" {
 					// 存入 到map
 					mutex.Lock()
 					AllImgMap[item.IllustId] = useType.Combination{
@@ -149,11 +150,12 @@ func main() {
 					mutex.Unlock()
 					err := detailsC.Visit(DetailsUrl + item.IllustId)
 					if err != nil {
-						fmt.Println("%s => 请求图片详情页面错误", err)
+						fmt.Println("请求图片详情页面错误", err)
+						fmt.Printf("%s",DetailsUrl + item.IllustId)
 						fmt.Println("正在尝试重复请求...", )
 						err := detailsC.Visit(DetailsUrl + item.IllustId)
 						if err != nil {
-							log.Fatalf("重复请求失败， 请检查网络或者代理")
+							//  pass
 						}
 					}
 				}
@@ -171,13 +173,13 @@ func main() {
 		if ok {
 			abUrl := e.Request.AbsoluteURL(url)
 			fmt.Println("当前爬取路径： ", abUrl)
-			err := e.Request.Visit(abUrl)
-			if err != nil {
-				fmt.Println("下一页请求失败", err)
-				fmt.Println("正尝试再次请求...")
-				err := pageC.Visit(abUrl)
+			for true {
+				err := e.Request.Visit(abUrl)
 				if err != nil {
-					log.Fatalf("尝试再次请求失败...请检查网络或者代理 %v", err)
+					fmt.Println("下一页请求失败", err)
+					fmt.Println("正尝试再次请求...")
+				} else {
+					break
 				}
 			}
 		}
@@ -186,7 +188,7 @@ func main() {
 	fmt.Println("当前爬取路径： ", CrawlUrl)
 	err = pageC.Visit(CrawlUrl)
 	if err != nil {
-		fmt.Printf("%s => 爬取错误 \n", err)
+		fmt.Printf("%s => 爬取错误 %s \n", err, CrawlUrl)
 		fmt.Println("正在尝试重新请求")
 		err = pageC.Visit(CrawlUrl)
 		if err != nil {
@@ -295,6 +297,7 @@ func main() {
 // 创建 基础Collector
 func CreateCollector() *colly.Collector {
 	c := colly.NewCollector()
+	c.AllowURLRevisit = true // 开启重新访问
 	if len(config.ProxyList) != 0 {
 		if p, err := proxy.RoundRobinProxySwitcher(config.ProxyList...); err == nil {
 			c.SetProxyFunc(p)
@@ -305,7 +308,7 @@ func CreateCollector() *colly.Collector {
 	c.OnRequest(func(r *colly.Request) {
 		r.Headers.Set("Accept-Language", "zh-CN,zh-TW;q=0.9,zh;q=0.8,en;q=0.7")
 		r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.108 Safari/537.36")
-		r.Headers.Set("Referer", "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LfJ0Z0UAAAAANqP-8mvUln2z6mHJwuv5YGtC8xp&co=aHR0cHM6Ly9hY2NvdW50cy5waXhpdi5uZXQ6NDQz&hl=zh-CN&v=v1561357937155&size=invisible&cb=apv8u3bpvdmf")
+		r.Headers.Set("Referer", "https://www.pixiv.net/")
 	})
 	return c
 }

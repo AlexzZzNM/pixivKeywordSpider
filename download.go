@@ -11,13 +11,14 @@ import (
 	"pixivKwywordSpider/useType"
 	"pixivKwywordSpider/utils"
 	"strconv"
+	"strings"
 	"sync"
 )
 
 func main()  {
 	fmt.Println("请输入爬取生成的文件路径和文件名（例：./xxx.json）：")
 	dir := ""
-	fmt.Scanf("%v", &dir)
+	fmt.Scanln(&dir)
 	file, err := os.Open(dir)
 	if err != nil {
 		log.Fatalf("打开文件失败=>%v", err)
@@ -28,7 +29,7 @@ func main()  {
 		log.Fatalf("读取文件失败 %v", err)
 	}
 
-	var ArrDataSclice []useType.Combination = []useType.Combination{}
+	var ArrDataSclice = []useType.DetailsInfoTwo{}
 	err = json.Unmarshal(bytes, &ArrDataSclice)
 	if err != nil {
 		log.Fatalf("解析文本数据失败 %v", err)
@@ -39,7 +40,7 @@ func main()  {
 	imgNumber := 0
 	imgNumberTxt := ""
 	for {
-		fmt.Scanf("%s", &imgNumberTxt)
+		fmt.Scanln(&imgNumberTxt)
 		fmt.Println(imgNumberTxt, "imgNumberTxt")
 		imgNumber, err = strconv.Atoi(imgNumberTxt)
 		if err != nil {
@@ -68,29 +69,61 @@ func main()  {
 
 	// 对要下载的图片下载 s
 	for index, item := range dowLenSclice {
-		downloadChan <- ""
-		wg.Add(1)
 
-		url := item.Urls["original"]
-		imgName, err := utils.UrlGetFileName(url)
-		if err != nil {
-			imgName = url
-		}
-		imgName = fmt.Sprintf("%d_%s", index+1, imgName)
-		go func() {
-			fmt.Println("imgName",imgName)
-			err = download.DownloadAndSave(url, saveDir, imgName)
-			if err != nil {
-				fmt.Println("下载并且保存图片错误=》%v", err)
+
+		keys := utils.GetMaPkey(item.Illust)
+		data := item.Illust[keys[0]]
+
+
+		for i := 0; i < data.PageCount; i++ {
+
+			downloadChan <- ""
+			wg.Add(1)
+
+
+			url := ""
+			if data.PageCount > 1 {
+			//https://i.pximg.net/img-original/img/2020/08/12/17/05/16/83625783_p0.jpg
+				fileName, err := utils.UrlGetFileName(data.Urls.Original)
+				if err != nil {
+					url = data.Urls.Original
+				} else {
+					fileName = strings.Replace(fileName, "p0", fmt.Sprintf("p%d", i), 1)
+					url = utils.UrlGetPath(data.Urls.Original) + "/" + fileName
+				}
+			} else {
+				url = data.Urls.Original
 			}
-			defer func() {
-				<-downloadChan
-				wg.Done()
+
+			imgName, err := utils.UrlGetFileName(url)
+			if err != nil {
+				imgName = url
+			}
+			imgName = fmt.Sprintf("%d_%s", index+1, imgName)
+			go func() {
+				fmt.Println("imgName",imgName)
+				err = download.DownloadAndSave(url, saveDir, imgName)
+				if err != nil {
+					for i := 0; i< 6; i++ {
+						err = download.DownloadAndSave(url, saveDir, imgName)
+						if err == nil {
+							break
+						}
+					}
+				}
+				if err != nil {
+					fmt.Printf("下载 或保存图片失败： %v", err)
+				}
+				defer func() {
+					<-downloadChan
+					wg.Done()
+				}()
 			}()
-		}()
+		}
 	}
 
 	wg.Wait()
 
 	fmt.Println("下载完成")
 }
+

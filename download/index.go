@@ -27,7 +27,8 @@ func NewProxyClient(proxyStrSlice ...string) (*http.Client) {
 
 	transport := &http.Transport{Proxy: proxy}
 
-	client := &http.Client{Transport: transport}
+//Timeout: 5 * time.Second
+	client := &http.Client{Timeout: 10 * time.Second ,Transport: transport}
 	return client
 }
 
@@ -47,7 +48,8 @@ func NewDownload(url string) (*http.Response, error) {
 
 	//增加header选项
 	reqest.Header.Add("Referer", "https://www.pixiv.net")
-	reqest.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.108 Safari/537.36")
+	reqest.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36")
+	reqest.Header.Add("cookie", config.Cookie)
 
 	if err != nil {
 		return nil, err
@@ -74,10 +76,6 @@ func DownloadAndSave(url, dir, fileName string) (error) {
 	// 对实参进行处理 e
 
 	newDate := time.Now()
-	res, err := NewDownload(url)
-	if err != nil {
-		return err
-	}
 	imgPath := path.Join(dir, fileName)
 	fileInfo, err := os.Stat(imgPath)
 	if err != nil || fileInfo.Size() == 0 {
@@ -92,6 +90,10 @@ func DownloadAndSave(url, dir, fileName string) (error) {
 		return err
 	}
 	defer f.Close()
+	res, err := NewDownload(url)
+	if err != nil {
+		return err
+	}
 	bys, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return err

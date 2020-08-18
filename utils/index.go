@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"os"
+	"pixivKwywordSpider/useType"
 	"strings"
 )
 
@@ -19,6 +20,14 @@ func UrlGetFileName(url string) (string, error) {
 	} else {
 		return string([]rune(url)[lastIndex:lastQueryIndex]), nil
 	}
+}
+
+func UrlGetPath(url string) (string) {
+	lastIndex := strings.LastIndex(url, "/")
+	if lastIndex == -1 {
+		return ""
+	}
+	return string([]rune(url)[0:lastIndex])
 }
 
 // 判断文件是否存在
@@ -50,4 +59,13 @@ func NoPathOnCreate(dir string) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// 获取map key 集合
+func GetMaPkey(newMap map[string]useType.DetailsInfoID) []string {
+	arr := []string{}
+	for key := range newMap{
+		arr = append(arr, key)
+	}
+	return arr
 }

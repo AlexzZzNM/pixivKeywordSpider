@@ -3,18 +3,24 @@ package config
 // 代理 列表
 var ProxyList []string = []string{
 	"socks5://127.0.0.1:1080",
+	//"socks5://127.0.0.1:1081",
+	//"socks5://127.0.0.1:1082",
 }
 
 // 爬取时， 最大并发 Goroutine 数目
-const MaxGoroutine  = 10
+const MaxGoroutine  = 20
 
 // p站用户名 密码
 const UserName string = ""
 const Password string = ""
 const RecaptchaToken string = "" // Recaptcha v3 Token
+// cookie，账号密码已不支持
+const Cookie string = ""
+//const Cookie string = ""
+const DataIsAjax bool = true
 
 // 关键字 要搜索的关键字
-const KeyWord string = "贞德" // 贞德天下第一  // 默认关键字 程序执行时会询问关键字
+const KeyWord string = "贞德天下第一" // 贞德天下第一  // 默认关键字 程序执行时会询问关键字
 
 // 收藏少于 本选项的 不被爬取
 const MinCollection int = 0
